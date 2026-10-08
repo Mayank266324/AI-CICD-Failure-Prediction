@@ -34,7 +34,12 @@ build/
 Thumbs.db
 
 # ML generated models
+# Ignore model artifacts by default
 *.pkl
+
+# Required production/demo prediction artifacts
+!models/xgboost.pkl
+!models/feature_names.pkl
 
 # Local databases
 *.db
@@ -43,3 +48,4 @@ Thumbs.db
 
 # Generated data
 data/github_actions_features.json
+data/github_actions_prediction.json
