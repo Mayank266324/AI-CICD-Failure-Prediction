@@ -91,6 +91,19 @@ jobs:
 
           Get-Content data/github_actions_features.json
 
+      - name: Initialize prediction database
+        shell: powershell
+        run: |
+          Write-Host ""
+          Write-Host "==================================="
+          Write-Host "Initializing Prediction Database"
+          Write-Host "==================================="
+          Write-Host ""
+
+          New-Item -ItemType Directory -Force -Path "data\database" | Out-Null
+
+          & $env:PYTHON_EXE -c "from database.database import Base, engine; from database import models; Base.metadata.create_all(bind=engine); print('Prediction database initialized successfully.')"
+
       - name: Run AI prediction
         shell: powershell
         run: |
