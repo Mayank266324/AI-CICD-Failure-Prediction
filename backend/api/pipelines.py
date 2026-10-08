@@ -25,16 +25,48 @@ def convert_prediction(record):
     explanation = []
 
     if record.explanation:
-        explanation = json.loads(record.explanation)
+
+        try:
+            explanation = json.loads(
+                record.explanation
+            )
+
+        except json.JSONDecodeError:
+
+            explanation = []
 
     return {
+
+        # -------------------------------------------------
+        # Basic record information
+        # -------------------------------------------------
+
         "id": record.id,
 
+        # -------------------------------------------------
+        # GitHub / CI metadata
+        # -------------------------------------------------
+
+        "repository": record.repository,
+
+        "branch": record.branch,
+
+        "commit_sha": record.commit_sha,
+
+        "run_id": record.run_id,
+
+        # -------------------------------------------------
+        # Pipeline input features
+        # -------------------------------------------------
+
         "files_changed": record.files_changed,
+
         "lines_added": record.lines_added,
+
         "lines_deleted": record.lines_deleted,
 
         "previous_failures": record.previous_failures,
+
         "previous_runs": record.previous_runs,
 
         "historical_failure_rate": (
@@ -42,12 +74,22 @@ def convert_prediction(record):
         ),
 
         "test_count": record.test_count,
+
         "test_failures": record.test_failures,
 
         "build_duration": record.build_duration,
 
-        "dependency_changes": record.dependency_changes,
-        "commit_frequency": record.commit_frequency,
+        "dependency_changes": (
+            record.dependency_changes
+        ),
+
+        "commit_frequency": (
+            record.commit_frequency
+        ),
+
+        # -------------------------------------------------
+        # ML prediction
+        # -------------------------------------------------
 
         "prediction": record.prediction,
 
@@ -61,7 +103,15 @@ def convert_prediction(record):
 
         "risk_level": record.risk_level,
 
+        # -------------------------------------------------
+        # SHAP explanation
+        # -------------------------------------------------
+
         "explanation": explanation,
+
+        # -------------------------------------------------
+        # Timestamp
+        # -------------------------------------------------
 
         "created_at": record.created_at
     }
@@ -102,6 +152,7 @@ def get_pipeline(
     )
 
     if record is None:
+
         raise HTTPException(
             status_code=404,
             detail="Prediction not found."

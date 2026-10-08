@@ -6,52 +6,56 @@ from pathlib import Path
 
 def run_git_command(command):
     """
-    Execute a git command and return stdout.
+    Execute a Git command safely and return its output.
     """
-    result = subprocess.run(
-        command,
-        shell=True,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=Path.cwd()
+        )
 
-    if result.returncode != 0:
+        if result.returncode != 0:
+            print(f"Git command failed: {' '.join(command)}")
+            print(f"Git error: {result.stderr.strip()}")
+            return ""
+
+        return result.stdout.strip()
+
+    except Exception as error:
+        print(f"Error executing Git command: {error}")
         return ""
-
-    return result.stdout.strip()
 
 
 def get_changed_files():
     """
-    Get number of files changed between the previous
-    commit and the current commit.
+    Count files changed between the current commit and its parent.
     """
-
     output = run_git_command(
-        "git diff --name-only HEAD^ HEAD"
+        ["git", "diff", "--name-only", "HEAD^", "HEAD"]
     )
 
     if not output:
         return 0
 
-    return len(
-        [
-            line
-            for line in output.splitlines()
-            if line.strip()
-        ]
-    )
+    files = [
+        line.strip()
+        for line in output.splitlines()
+        if line.strip()
+    ]
+
+    return len(files)
 
 
 def get_line_changes():
     """
-    Get total lines added and deleted between
-    the previous commit and current commit.
+    Count added and deleted lines between the current commit
+    and its parent.
     """
-
     output = run_git_command(
-        "git diff --numstat HEAD^ HEAD"
+        ["git", "diff", "--numstat", "HEAD^", "HEAD"]
     )
 
     lines_added = 0
@@ -70,7 +74,7 @@ def get_line_changes():
         added = parts[0]
         deleted = parts[1]
 
-        # Binary files may show "-"
+        # Git can report binary files as "-"
         if added.isdigit():
             lines_added += int(added)
 
@@ -82,12 +86,15 @@ def get_line_changes():
 
 def get_commit_frequency():
     """
-    Approximate commit frequency as commits per day
-    over the last 30 days.
+    Calculate average commits per day over the last 30 days.
     """
-
     output = run_git_command(
-        'git log --since="30 days ago" --format=%H'
+        [
+            "git",
+            "log",
+            "--since=30 days ago",
+            "--format=%H"
+        ]
     )
 
     if not output:
@@ -95,13 +102,15 @@ def get_commit_frequency():
 
     commit_count = len(output.splitlines())
 
-    return round(
-        commit_count / 30.0,
-        2
-    )
+    return round(commit_count / 30.0, 2)
 
 
 def get_repository_info():
+    """
+    Collect GitHub Actions environment information.
+
+    When running locally, fallback values are used.
+    """
 
     repository = os.getenv(
         "GITHUB_REPOSITORY",
@@ -127,7 +136,7 @@ def get_repository_info():
         "repository": repository,
         "branch": branch,
         "commit_sha": commit_sha,
-        "run_id": run_id,
+        "run_id": run_id
     }
 
 
@@ -143,7 +152,7 @@ def collect_features():
 
     features = {
 
-        # ML features
+        # Code change features
         "files_changed": files_changed,
 
         "lines_added": lines_added,
@@ -152,14 +161,18 @@ def collect_features():
 
         "commit_frequency": commit_frequency,
 
-        # These will be populated from historical
-        # pipeline data in the next stage.
+        # Historical pipeline features
+        # These will later be populated from
+        # previous GitHub Actions runs.
         "previous_failures": 0,
 
         "previous_runs": 0,
 
         "historical_failure_rate": 0.0,
 
+        # Test/build features
+        # These will later be populated from
+        # CI execution information.
         "test_count": 0,
 
         "test_failures": 0,
@@ -175,7 +188,7 @@ def collect_features():
 
         "commit_sha": repository_info["commit_sha"],
 
-        "run_id": repository_info["run_id"],
+        "run_id": repository_info["run_id"]
     }
 
     return features
@@ -206,18 +219,21 @@ def main():
             indent=4
         )
 
-    print("\n===================================")
+    print()
+    print("===================================")
     print("GitHub Actions Feature Collector")
-    print("===================================\n")
+    print("===================================")
+    print()
 
     for key, value in features.items():
+
         print(f"{key}: {value}")
 
+    print()
     print(
-        f"\nFeature file created: {output_path}"
+        f"Feature file created: {output_path}"
     )
 
-# CI/CD integration test change
 
 if __name__ == "__main__":
     main()

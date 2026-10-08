@@ -17,28 +17,84 @@ def create_prediction(
     )
 
     db_prediction = PipelinePrediction(
+
+        # -------------------------------------------------
+        # GitHub / CI metadata
+        # -------------------------------------------------
+
+        repository=features.get(
+            "repository"
+        ),
+
+        branch=features.get(
+            "branch"
+        ),
+
+        commit_sha=features.get(
+            "commit_sha"
+        ),
+
+        run_id=features.get(
+            "run_id"
+        ),
+
+        # -------------------------------------------------
+        # Pipeline input features
+        # -------------------------------------------------
+
         files_changed=features["files_changed"],
+
         lines_added=features["lines_added"],
+
         lines_deleted=features["lines_deleted"],
+
         previous_failures=features["previous_failures"],
+
         previous_runs=features["previous_runs"],
-        historical_failure_rate=features["historical_failure_rate"],
+
+        historical_failure_rate=(
+            features["historical_failure_rate"]
+        ),
+
         test_count=features["test_count"],
+
         test_failures=features["test_failures"],
+
         build_duration=features["build_duration"],
+
         dependency_changes=features["dependency_changes"],
+
         commit_frequency=features["commit_frequency"],
 
+        # -------------------------------------------------
+        # ML prediction
+        # -------------------------------------------------
+
         prediction=prediction_result["prediction"],
-        failure_probability=prediction_result["failure_probability"],
-        failure_percentage=prediction_result["failure_percentage"],
+
+        failure_probability=(
+            prediction_result["failure_probability"]
+        ),
+
+        failure_percentage=(
+            prediction_result["failure_percentage"]
+        ),
+
         risk_level=prediction_result["risk_level"],
 
-        explanation=json.dumps(explanation)
+        # -------------------------------------------------
+        # SHAP explanation
+        # -------------------------------------------------
+
+        explanation=json.dumps(
+            explanation
+        )
     )
 
     db.add(db_prediction)
+
     db.commit()
+
     db.refresh(db_prediction)
 
     return db_prediction
@@ -51,7 +107,9 @@ def get_predictions(
 
     return (
         db.query(PipelinePrediction)
-        .order_by(PipelinePrediction.created_at.desc())
+        .order_by(
+            PipelinePrediction.created_at.desc()
+        )
         .limit(limit)
         .all()
     )
@@ -64,9 +122,12 @@ def get_prediction(
 
     return (
         db.query(PipelinePrediction)
-        .filter(PipelinePrediction.id == prediction_id)
+        .filter(
+            PipelinePrediction.id == prediction_id
+        )
         .first()
     )
+
 
 def get_prediction_by_id(
     db: Session,
@@ -75,6 +136,8 @@ def get_prediction_by_id(
 
     return (
         db.query(PipelinePrediction)
-        .filter(PipelinePrediction.id == prediction_id)
+        .filter(
+            PipelinePrediction.id == prediction_id
+        )
         .first()
     )
