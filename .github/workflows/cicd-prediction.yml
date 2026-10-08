@@ -1,121 +1,117 @@
 name: AI CI-CD Failure Prediction
 
 on:
-
   push:
-
   pull_request:
-
   workflow_dispatch:
 
-
 jobs:
-
   predict-pipeline:
-
     runs-on: self-hosted
 
+    env:
+      PYTHON_EXE: 'D:\Programming\Projects\CI-CD pipeline\AI-CICD-Failure-Prediction\.ci\Scripts\python.exe'
+
     steps:
-
-      # ============================================
-      # Checkout repository
-      # ============================================
-
       - name: Checkout repository
-
         uses: actions/checkout@v4
-
         with:
           fetch-depth: 0
 
-
-      # ============================================
-      # Setup Python
-      # ============================================
-
-      - name: Setup Python
-
-        uses: actions/setup-python@v5
-
-        with:
-          python-version: "3.11"
-
-
-      # ============================================
-      # Verify environment
-      # ============================================
-
       - name: Verify environment
-
+        shell: powershell
         run: |
+          Write-Host ""
+          Write-Host "==================================="
+          Write-Host "CI/CD Prediction Environment"
+          Write-Host "==================================="
+          Write-Host ""
 
-          python --version
+          Write-Host "Python executable:"
+          Write-Host $env:PYTHON_EXE
 
+          Write-Host ""
+          Write-Host "Python version:"
+          & $env:PYTHON_EXE --version
+
+          Write-Host ""
+          Write-Host "Git version:"
           git --version
 
-          echo "Repository: $env:GITHUB_REPOSITORY"
+          Write-Host ""
+          Write-Host "Repository:"
+          Write-Host $env:GITHUB_REPOSITORY
 
-          echo "Branch: $env:GITHUB_REF_NAME"
+          Write-Host ""
+          Write-Host "Branch:"
+          Write-Host $env:GITHUB_REF_NAME
 
-          echo "Commit: $env:GITHUB_SHA"
+          Write-Host ""
+          Write-Host "Commit:"
+          Write-Host $env:GITHUB_SHA
 
-
-      # ============================================
-      # Install project dependencies
-      # ============================================
-
-      - name: Install dependencies
+      - name: Verify ML dependencies
         shell: powershell
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          Write-Host ""
+          Write-Host "==================================="
+          Write-Host "Checking ML Dependencies"
+          Write-Host "==================================="
+          Write-Host ""
+
+          & $env:PYTHON_EXE -c "import joblib; print('joblib:', joblib.__version__)"
+          & $env:PYTHON_EXE -c "import xgboost; print('xgboost:', xgboost.__version__)"
+          & $env:PYTHON_EXE -c "import shap; print('shap:', shap.__version__)"
+          & $env:PYTHON_EXE -c "import sklearn; print('scikit-learn:', sklearn.__version__)"
+          & $env:PYTHON_EXE -c "import pandas; print('pandas:', pandas.__version__)"
+          & $env:PYTHON_EXE -c "import numpy; print('numpy:', numpy.__version__)"
 
           Write-Host ""
-          Write-Host "Installed Python:"
-          python --version
-
-          Write-Host ""
-          Write-Host "Python executable:"
-          python -c "import sys; print(sys.executable)"
-
-          Write-Host ""
-          Write-Host "Checking required packages:"
-          python -c "import joblib; print('joblib:', joblib.__version__)"
-          python -c "import xgboost; print('xgboost:', xgboost.__version__)"
-          python -c "import shap; print('shap:', shap.__version__)"
-          python -c "import sklearn; print('scikit-learn:', sklearn.__version__)"
-
-
-      # ============================================
-      # Collect CI/CD features
-      # ============================================
+          Write-Host "All required ML dependencies are available."
 
       - name: Collect pipeline features
-
+        shell: powershell
         run: |
+          Write-Host ""
+          Write-Host "==================================="
+          Write-Host "Collecting Pipeline Features"
+          Write-Host "==================================="
+          Write-Host ""
 
-          python github_actions/collect_features.py
-
-
-      # ============================================
-      # Display generated features
-      # ============================================
+          & $env:PYTHON_EXE github_actions/collect_features.py
 
       - name: Display collected features
-
         shell: powershell
-
         run: |
+          Write-Host ""
+          Write-Host "==================================="
+          Write-Host "Collected Features"
+          Write-Host "==================================="
+          Write-Host ""
 
           Get-Content data/github_actions_features.json
 
-
-      # ============================================
-      # Prediction stage
-      # ============================================
-
       - name: Run AI prediction
-
+        shell: powershell
         run: |
+          Write-Host ""
+          Write-Host "==================================="
+          Write-Host "Running AI Prediction"
+          Write-Host "==================================="
+          Write-Host ""
 
-          python github_actions/predict_pipeline.py
+          & $env:PYTHON_EXE github_actions/predict_pipeline.py
+
+      - name: Display prediction result
+        shell: powershell
+        if: always()
+        run: |
+          if (Test-Path data/github_actions_prediction.json) {
+              Write-Host ""
+              Write-Host "==================================="
+              Write-Host "Prediction Result File"
+              Write-Host "==================================="
+              Write-Host ""
+
+              Get-Content data/github_actions_prediction.json
+          }
