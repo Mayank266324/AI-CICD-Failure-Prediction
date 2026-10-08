@@ -1,0 +1,114 @@
+name: AI CI-CD Failure Prediction
+
+on:
+
+  push:
+
+  pull_request:
+
+  workflow_dispatch:
+
+
+jobs:
+
+  predict-pipeline:
+
+    runs-on: self-hosted
+
+    steps:
+
+      # ============================================
+      # Checkout repository
+      # ============================================
+
+      - name: Checkout repository
+
+        uses: actions/checkout@v4
+
+        with:
+          fetch-depth: 0
+
+
+      # ============================================
+      # Setup Python
+      # ============================================
+
+      - name: Setup Python
+
+        uses: actions/setup-python@v5
+
+        with:
+          python-version: "3.11"
+
+
+      # ============================================
+      # Verify environment
+      # ============================================
+
+      - name: Verify environment
+
+        run: |
+
+          python --version
+
+          git --version
+
+          echo "Repository: $env:GITHUB_REPOSITORY"
+
+          echo "Branch: $env:GITHUB_REF_NAME"
+
+          echo "Commit: $env:GITHUB_SHA"
+
+
+      # ============================================
+      # Install project dependencies
+      # ============================================
+
+      - name: Install dependencies
+
+        shell: powershell
+
+        run: |
+
+          if (Test-Path requirements.txt) {
+
+              python -m pip install --upgrade pip
+
+              pip install -r requirements.txt
+
+          }
+
+
+      # ============================================
+      # Collect CI/CD features
+      # ============================================
+
+      - name: Collect pipeline features
+
+        run: |
+
+          python github_actions/collect_features.py
+
+
+      # ============================================
+      # Display generated features
+      # ============================================
+
+      - name: Display collected features
+
+        shell: powershell
+
+        run: |
+
+          Get-Content data/github_actions_features.json
+
+
+      # ============================================
+      # Prediction stage
+      # ============================================
+
+      - name: Run AI prediction
+
+        run: |
+
+          python github_actions/predict_pipeline.py
